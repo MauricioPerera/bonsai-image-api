@@ -1,5 +1,7 @@
 # bonsai-image-api
 
+**🌳 [Overview & guide (ES / EN / PT) →](https://mauricioperera.github.io/bonsai-image-api/)** — an illustrated walkthrough with a live device check that tells you if your machine can run it, before you deploy.
+
 Turn the **Bonsai Image** WebGPU model into an HTTP API you can call from
 anywhere — on Cloudflare Pages, free tier, no server.
 
