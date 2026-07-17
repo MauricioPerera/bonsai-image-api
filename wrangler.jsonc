@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bonsai-image",
+  "compatibility_date": "2026-06-24",
+  // La salida del build (index.html + assets + worker.js). functions/ vive en la
+  // raíz del proyecto y Pages la detecta sola — NO va acá dentro.
+  "pages_build_output_dir": "_site"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "bonsai-image-api",
+  "version": "1.0.0",
+  "description": "Task-based HTTP API in front of the Bonsai Image WebGPU diffusion model, on Cloudflare Pages + Functions.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "deploy": "node build.mjs && wrangler pages deploy _site",
+    "dev": "node build.mjs && wrangler pages dev _site --binding API_SECRET=dev-secret"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
