@@ -1,0 +1,126 @@
+// _queue.js — buzón entre quien llama a la API y la pestaña que tiene el engine.
+//
+// Sobre la Cache API del runtime de Workers: sin bindings, sin D1, sin Durable
+// Objects. Es por-colo, que acá es exactamente lo que corresponde: quien llama y
+// la pestaña están en la misma máquina, así que caen en el mismo colo.
+//
+// Un Pages Function es stateless. El POST de quien llama y el poll de la pestaña
+// son dos ejecuciones distintas que no comparten memoria: acá se encuentran.
+//
+// Una sola ranura: hay un solo engine con un solo modelo cargado. El resto
+// recibe 429.
+
+const PENDING = 'https://img-queue.internal/pending';
+const RESULT = (id) => `https://img-queue.internal/result/${id}`;
+const STATE = 'https://img-queue.internal/state';
+const TTL = 300; // segundos
+
+const cache = () => caches.default;
+
+const body = (obj) =>
+  new Response(JSON.stringify(obj), {
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `max-age=${TTL}` },
+  });
+
+// ── trabajo pendiente ──────────────────────────────────────────────────────
+
+export async function getPending() {
+  const hit = await cache().match(new Request(PENDING));
+  return hit ? hit.json() : null;
+}
+
+export async function putPending(job) {
+  await cache().put(new Request(PENDING), body(job));
+}
+
+export async function clearPending() {
+  await cache().delete(new Request(PENDING));
+}
+
+// ── resultados ─────────────────────────────────────────────────────────────
+
+export async function putResult(id, result) {
+  await cache().put(new Request(RESULT(id)), body(result));
+}
+
+export async function takeResult(id) {
+  const hit = await cache().match(new Request(RESULT(id)));
+  if (!hit) return null;
+  const data = await hit.json();
+  await cache().delete(new Request(RESULT(id)));
+  return data;
+}
+
+// ── blobs (export / import) ────────────────────────────────────────────────
+// Los .jvsb NO viajan por el buzón JSON. Medido: base64+JSON de 20 MB cuesta
+// 33 ms de CPU y el plan Free da 10 ms por invocación, así que ese camino topa
+// a ~5 MB. Acá los bytes se guardan como Response binaria y se pasan en
+// streaming: sin base64 (+33% y todo ese CPU), sin JSON.parse, sin pico de
+// memoria. El techo pasa a ser el request body: 100 MB en Free.
+
+const BLOB = (id) => `https://img-queue.internal/blob/${id}`;
+
+export async function putBlob(id, bodyStream) {
+  await cache().put(
+    new Request(BLOB(id)),
+    new Response(bodyStream, {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Cache-Control': `max-age=${TTL}`,
+      },
+    })
+  );
+}
+
+// Devuelve la Response cruda: quien llama la reenvía o la lee, sin materializar
+// los bytes acá si no hace falta.
+export async function takeBlob(id, { keep = false } = {}) {
+  const hit = await cache().match(new Request(BLOB(id)));
+  if (!hit) return null;
+  if (!keep) await cache().delete(new Request(BLOB(id)));
+  return hit;
+}
+
+// ── tareas (API asíncrona) ──────────────────────────────────────────────────
+// Una imagen tarda ~51 s, demasiado para sostener una conexión HTTP a través del
+// edge. Así que POST /api/generate NO espera: crea una tarea, devuelve su id, y
+// el que llama sondea /api/tasks/:id hasta que status sea "done" y entonces baja
+// el PNG. El registro de la tarea vive acá; el worker lo va actualizando.
+
+const TASK = (id) => `https://img-queue.internal/task/${id}`;
+
+export async function putTask(task) {
+  await cache().put(new Request(TASK(task.id)), body({ ...task, updatedAt: Date.now() }));
+}
+
+export async function getTask(id) {
+  const hit = await cache().match(new Request(TASK(id)));
+  return hit ? hit.json() : null;
+}
+
+// Actualiza campos de una tarea sin pisar el resto (merge).
+export async function patchTask(id, fields) {
+  const prev = (await getTask(id)) || { id };
+  await putTask({ ...prev, ...fields });
+}
+
+// ── estado del worker ──────────────────────────────────────────────────────
+// La pestaña lo reporta en cada long-poll de /api/next: no cuesta requests
+// extra, es un efecto de una llamada que ya hace igual.
+
+export async function putState(state) {
+  await cache().put(new Request(STATE), body(state));
+}
+
+export async function getState() {
+  const hit = await cache().match(new Request(STATE));
+  return hit ? hit.json() : null;
+}
+
+// charset=utf-8 explícito: sin eso PowerShell 5.1 decodifica como ISO-8859-1 y
+// los acentos llegan rotos. JSON es UTF-8 por spec, pero decirlo no cuesta nada.
+export const json = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+  });

@@ -1,0 +1,4 @@
+_site/
+.wrangler/
+node_modules/
+*.png
