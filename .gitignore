@@ -1,4 +1,4 @@
 _site/
 .wrangler/
 node_modules/
-*.png
+/*.png   # solo artefactos de la raíz; docs/assets/ sí se versiona
