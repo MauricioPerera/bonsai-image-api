@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bonsai Image API — generá imágenes con IA desde tu navegador, como una API</title>
-<meta name="description" content="Un modelo de generación de imágenes que corre entero en tu navegador (WebGPU), expuesto como API HTTP en Cloudflare Pages. Gratis, sin servidor, y tus datos nunca salen de tu máquina.">
+<title>Bonsai Image API</title>
+<meta name="description" content="Un modelo de generación de imágenes que corre entero en tu navegador (WebGPU), expuesto como API HTTP en Cloudflare Pages. Gratis, sin servidor.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,485 +17,564 @@
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{
-    margin:0;background:var(--bg);color:var(--cream);
-    font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
-    line-height:1.6;overflow-x:hidden;
-  }
-  a{color:var(--amber);text-decoration:none}
-  a:hover{text-decoration:underline}
+  body{margin:0;background:var(--bg);color:var(--cream);font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6;overflow-x:hidden}
+  a{color:var(--amber);text-decoration:none} a:hover{text-decoration:underline}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 1.4rem}
   h1,h2,h3{font-family:'Instrument Serif',serif;font-weight:400;letter-spacing:-.4px;line-height:1.15}
   code,pre,.mono{font-family:'Geist Mono',ui-monospace,Consolas,monospace}
   .eyebrow{font:600 12px/1 'Geist Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);opacity:.85}
   .dim{color:var(--dim)} .muted{color:var(--muted)}
-
-  /* nav */
   nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:#0c0a08cc;border-bottom:1px solid var(--border2)}
   nav .wrap{display:flex;align-items:center;gap:1.2rem;height:58px}
   nav .brand{font-family:'Instrument Serif',serif;font-size:20px;margin-right:auto}
   nav .brand span{color:var(--amber)}
-  nav a.lnk{color:var(--muted);font-size:14px}
-  nav a.lnk:hover{color:var(--cream);text-decoration:none}
-  nav a.gh{border:1px solid var(--border);padding:.4rem .8rem;border-radius:7px;color:var(--cream);font-size:13px}
-  nav a.gh:hover{border-color:var(--amber-dim);text-decoration:none}
-  @media(max-width:640px){ nav a.lnk{display:none} }
-
-  /* hero */
+  nav a.lnk{color:var(--muted);font-size:14px} nav a.lnk:hover{color:var(--cream);text-decoration:none}
+  nav a.gh{border:1px solid var(--border);padding:.4rem .8rem;border-radius:7px;color:var(--cream);font-size:13px} nav a.gh:hover{border-color:var(--amber-dim);text-decoration:none}
+  .langsel{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .langsel button{background:none;border:0;color:var(--dim);font:500 12px 'Geist Mono',monospace;padding:.4rem .55rem;cursor:pointer}
+  .langsel button.on{background:#e8a55e1a;color:var(--amber)}
+  .langsel button:hover:not(.on){color:var(--cream)}
+  @media(max-width:680px){ nav a.lnk{display:none} }
   .hero{position:relative;padding:5.5rem 0 4rem;overflow:hidden}
-  .hero::before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);
-    width:900px;height:600px;background:radial-gradient(ellipse at center,#e8a55e22,transparent 65%);pointer-events:none;filter:blur(20px)}
+  .hero::before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse at center,#e8a55e22,transparent 65%);pointer-events:none;filter:blur(20px)}
   .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:3rem;align-items:center;position:relative}
   @media(max-width:820px){ .hero-grid{grid-template-columns:1fr;gap:2rem} }
   .hero h1{font-size:clamp(2.6rem,6vw,4.2rem);margin:.6rem 0 1rem}
   .hero h1 em{color:var(--amber);font-style:italic}
-  .hero p.lead{font-size:1.15rem;color:var(--muted);max-width:34ch;margin:0 0 1.8rem}
+  .hero p.lead{font-size:1.15rem;color:var(--muted);max-width:36ch;margin:0 0 1.8rem}
   .cta-row{display:flex;gap:.8rem;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.3rem;border-radius:9px;font-weight:500;font-size:.95rem;transition:transform .15s,box-shadow .15s,background .15s}
   .btn:hover{text-decoration:none;transform:translateY(-1px)}
-  .btn-primary{background:var(--amber);color:#1a1206;box-shadow:0 8px 24px -8px #e8a55e88}
-  .btn-primary:hover{background:#f0b877}
-  .btn-ghost{border:1px solid var(--border);color:var(--cream)}
-  .btn-ghost:hover{border-color:var(--amber-dim)}
+  .btn-primary{background:var(--amber);color:#1a1206;box-shadow:0 8px 24px -8px #e8a55e88} .btn-primary:hover{background:#f0b877}
+  .btn-ghost{border:1px solid var(--border);color:var(--cream)} .btn-ghost:hover{border-color:var(--amber-dim)}
   .hero-img{position:relative}
   .hero-img img{width:100%;border-radius:14px;border:1px solid var(--border);box-shadow:0 30px 70px -25px #000c;display:block}
   .hero-img .tag{position:absolute;left:12px;bottom:12px;background:#0c0a08d9;border:1px solid var(--border);border-radius:8px;padding:.45rem .7rem;font:500 12px/1.3 'Geist Mono',monospace;backdrop-filter:blur(6px)}
   .hero-img .tag b{color:var(--amber);font-weight:500}
-  .float{animation:float 6s ease-in-out infinite}
-  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-
+  .float{animation:float 6s ease-in-out infinite} @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
   .pills{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.6rem}
   .pill{font:500 12px/1 'Geist Mono',monospace;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:.45rem .8rem}
   .pill b{color:var(--green);font-weight:500}
-
-  /* sections */
   section{padding:4.5rem 0;border-top:1px solid var(--border2)}
-  .sec-head{max-width:56ch;margin-bottom:2.4rem}
+  .sec-head{max-width:58ch;margin-bottom:2.4rem}
   .sec-head h2{font-size:clamp(1.9rem,4vw,2.6rem);margin:.5rem 0 .6rem}
   .sec-head p{color:var(--muted);font-size:1.05rem;margin:0}
-
-  /* reveal on scroll */
   .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
   .reveal.in{opacity:1;transform:none}
-
-  /* cards */
-  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
-  @media(max-width:760px){ .cards{grid-template-columns:1fr} }
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem} @media(max-width:760px){ .cards{grid-template-columns:1fr} }
   .card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1.4rem}
-  .card .ic{font-size:1.6rem;margin-bottom:.6rem}
-  .card h3{font-size:1.4rem;margin:0 0 .4rem}
-  .card p{color:var(--muted);font-size:.95rem;margin:0}
-
-  /* flow diagram */
+  .card .ic{font-size:1.6rem;margin-bottom:.6rem} .card h3{font-size:1.4rem;margin:0 0 .4rem} .card p{color:var(--muted);font-size:.95rem;margin:0}
   .flow{background:linear-gradient(180deg,var(--bg2),var(--bg));border:1px solid var(--border);border-radius:16px;padding:2rem 1.4rem}
   .flow svg{width:100%;height:auto;display:block}
   .flow-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-top:1.6rem}
   .flow-legend .item{display:flex;gap:.7rem;align-items:flex-start}
   .flow-legend .n{flex:0 0 24px;height:24px;border-radius:6px;background:#e8a55e1a;border:1px solid var(--amber-dim);color:var(--amber);font:600 13px/24px 'Geist Mono',monospace;text-align:center}
-  .flow-legend .t{font-size:.9rem;color:var(--muted)}
-  .flow-legend .t b{color:var(--cream);font-weight:500}
-
-  /* key idea highlight */
-  .keybox{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center}
-  @media(max-width:760px){ .keybox{grid-template-columns:1fr} }
-  .keybox .txt h2{font-size:clamp(1.8rem,4vw,2.4rem);margin:.4rem 0 .8rem}
-  .keybox .txt p{color:var(--muted)}
+  .flow-legend .t{font-size:.9rem;color:var(--muted)} .flow-legend .t b{color:var(--cream);font-weight:500}
+  .keybox{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center} @media(max-width:760px){ .keybox{grid-template-columns:1fr} }
+  .keybox .txt h2{font-size:clamp(1.8rem,4vw,2.4rem);margin:.4rem 0 .8rem} .keybox .txt p{color:var(--muted)}
   .tabmock{background:#0a0806;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 20px 50px -20px #000}
   .tabmock .bar{display:flex;align-items:center;gap:.4rem;padding:.6rem .8rem;background:#151009;border-bottom:1px solid var(--border)}
-  .tabmock .dot{width:11px;height:11px;border-radius:50%}
-  .tabmock .u{margin-left:.6rem;font:12px 'Geist Mono',monospace;color:var(--dim)}
+  .tabmock .dot{width:11px;height:11px;border-radius:50%} .tabmock .u{margin-left:.6rem;font:12px 'Geist Mono',monospace;color:var(--dim)}
   .tabmock .body{padding:1.1rem;position:relative;min-height:150px}
   .panel-mock{border:1px solid #2f6b52;border-radius:8px;background:#0b0d10;padding:.7rem .8rem;font:12px 'Geist Mono',monospace}
-  .panel-mock .h{font-weight:600;margin-bottom:.4rem;font-family:'Geist',sans-serif}
-  .panel-mock .st{color:var(--green)}
+  .panel-mock .h{font-weight:600;margin-bottom:.4rem;font-family:'Geist',sans-serif} .panel-mock .st{color:var(--green)}
   .panel-mock .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 1.6s infinite}
   @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 #6fd39a66}50%{opacity:.5;box-shadow:0 0 0 5px #6fd39a00}}
-
-  /* deploy */
-  .steps{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
-  @media(max-width:760px){ .steps{grid-template-columns:1fr} }
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem} @media(max-width:760px){ .steps{grid-template-columns:1fr} }
   .step{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1.4rem}
   .step .k{font:600 12px/1 'Geist Mono',monospace;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
-  .step h3{font-size:1.35rem;margin:0 0 .8rem}
-  .step ol{margin:0;padding-left:1.2rem;color:var(--muted);font-size:.92rem}
-  .step ol li{margin-bottom:.5rem}
+  .step h3{font-size:1.35rem;margin:0 0 .8rem} .step ol{margin:0;padding-left:1.2rem;color:var(--muted);font-size:.92rem} .step ol li{margin-bottom:.5rem}
   .codeblock{position:relative;background:#080605;border:1px solid var(--border);border-radius:10px;margin:.9rem 0}
   .codeblock pre{margin:0;padding:.9rem 1rem;overflow-x:auto;font-size:.82rem;line-height:1.7;color:#dfd6c8}
   .codeblock .cp{position:absolute;top:.5rem;right:.5rem;background:#1a140d;border:1px solid var(--border);color:var(--muted);font:500 11px 'Geist',sans-serif;padding:.25rem .5rem;border-radius:6px;cursor:pointer}
   .codeblock .cp:hover{color:var(--cream);border-color:var(--amber-dim)}
-  .tok-c{color:var(--faint)} .tok-f{color:var(--amber)} .tok-s{color:#9fbf8a} .tok-k{color:#c99bd6}
-
-  /* api flow demo */
-  .apiflow{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem;align-items:start}
-  @media(max-width:820px){ .apiflow{grid-template-columns:1fr} }
+  .tok-c{color:var(--faint)} .tok-f{color:var(--amber)} .tok-s{color:#9fbf8a}
+  .apiflow{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem;align-items:start} @media(max-width:820px){ .apiflow{grid-template-columns:1fr} }
   .poll{background:#080605;border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;font:13px/2 'Geist Mono',monospace}
-  .poll .ln{opacity:0;animation:pollin .5s forwards}
-  .poll .ln .st{color:var(--dim)}
-  .poll .ln.done .st{color:var(--green);font-weight:500}
-  .poll .bar{display:inline-block;height:6px;border-radius:3px;background:var(--amber);vertical-align:middle;margin-left:6px;transition:width .4s}
+  .poll .ln{opacity:0} .poll .ln .st{color:var(--dim)} .poll .ln.done .st{color:var(--green);font-weight:500}
+  .poll .bar{display:inline-block;height:6px;border-radius:3px;background:var(--amber);vertical-align:middle;margin-left:6px}
   @keyframes pollin{to{opacity:1}}
-
-  /* device panel */
   .devpanel{background:#0b0d10;border:1px solid #2a3038;border-radius:10px;padding:1rem 1.1rem;font:13px/1.9 'Geist Mono',monospace;max-width:420px}
   .devpanel .h{font-family:'Geist',sans-serif;font-weight:600;margin-bottom:.5rem}
-  .devpanel .r{display:flex;justify-content:space-between;gap:1.2rem}
-  .devpanel .r span:first-child{color:var(--dim)}
+  .devpanel .r{display:flex;justify-content:space-between;gap:1.2rem} .devpanel .r span:first-child{color:var(--dim)}
   .devpanel .ok{color:var(--green)} .devpanel .bad{color:var(--red)} .devpanel .warn{color:var(--amber)}
   .devpanel .verdict{color:var(--green);margin-top:.6rem;font-family:'Geist',sans-serif;font-size:.86rem}
   .devpanel .verdict.bad{color:var(--red)} .devpanel .verdict.warn{color:var(--amber)}
   .devpanel .note{color:var(--faint);margin-top:.4rem;font-family:'Geist',sans-serif;font-size:.76rem}
-
-  /* honest list */
-  .honest{display:grid;grid-template-columns:repeat(2,1fr);gap:1.1rem}
-  @media(max-width:700px){ .honest{grid-template-columns:1fr} }
+  .honest{display:grid;grid-template-columns:repeat(2,1fr);gap:1.1rem} @media(max-width:700px){ .honest{grid-template-columns:1fr} }
   .honest .h{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber-dim);border-radius:10px;padding:1.1rem 1.2rem}
-  .honest .h b{display:block;margin-bottom:.3rem;font-weight:500}
-  .honest .h span{color:var(--muted);font-size:.9rem}
-
+  .honest .h b{display:block;margin-bottom:.3rem;font-weight:500} .honest .h span{color:var(--muted);font-size:.9rem}
   footer{border-top:1px solid var(--border2);padding:3rem 0;color:var(--dim);font-size:.9rem}
   footer .wrap{display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:space-between;align-items:center}
-  footer a{color:var(--muted)}
-  .attrib{font-size:.82rem;color:var(--faint);max-width:52ch;margin-top:1.2rem}
+  footer a{color:var(--muted)} .attrib{font-size:.82rem;color:var(--faint);max-width:52ch;margin-top:1.2rem}
 </style>
 </head>
 <body>
 
 <nav><div class="wrap">
   <div class="brand">Bonsai <span>Image API</span></div>
-  <a class="lnk" href="#como">Cómo funciona</a>
-  <a class="lnk" href="#deploy">Desplegar</a>
-  <a class="lnk" href="#usar">Usar</a>
+  <a class="lnk" href="#como" data-i18n="nav_how"></a>
+  <a class="lnk" href="#deploy" data-i18n="nav_deploy"></a>
+  <a class="lnk" href="#usar" data-i18n="nav_use"></a>
+  <div class="langsel" id="langsel">
+    <button data-lang="es">ES</button><button data-lang="en">EN</button><button data-lang="pt">PT</button>
+  </div>
   <a class="gh" href="https://github.com/MauricioPerera/bonsai-image-api" target="_blank" rel="noopener">GitHub ↗</a>
 </div></nav>
 
-<!-- HERO -->
 <header class="hero"><div class="wrap hero-grid">
   <div>
-    <div class="eyebrow">Cloudflare Pages · WebGPU · plan gratis</div>
-    <h1>Generá imágenes con IA <em>desde tu navegador</em>, como una API.</h1>
-    <p class="lead">Un modelo de 4 mil millones de parámetros corre entero en tu navegador. Vos lo exponés como una API HTTP — sin servidor, sin costo, y tus datos nunca salen de tu máquina.</p>
+    <div class="eyebrow">Cloudflare Pages · WebGPU · <span data-i18n="hero_eyebrow"></span></div>
+    <h1 data-i18n="hero_title"></h1>
+    <p class="lead" data-i18n="hero_lead"></p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="#deploy">Desplegarlo →</a>
-      <a class="btn btn-ghost" href="https://github.com/MauricioPerera/bonsai-image-api" target="_blank" rel="noopener">Ver el código</a>
+      <a class="btn btn-primary" href="#deploy" data-i18n="hero_cta1"></a>
+      <a class="btn btn-ghost" href="https://github.com/MauricioPerera/bonsai-image-api" target="_blank" rel="noopener" data-i18n="hero_cta2"></a>
     </div>
     <div class="pills">
-      <span class="pill"><b>✓</b> 100% en tu equipo</span>
-      <span class="pill"><b>✓</b> gratis</span>
-      <span class="pill"><b>✓</b> sin servidor propio</span>
+      <span class="pill"><b>✓</b> <span data-i18n="pill1"></span></span>
+      <span class="pill"><b>✓</b> <span data-i18n="pill2"></span></span>
+      <span class="pill"><b>✓</b> <span data-i18n="pill3"></span></span>
     </div>
   </div>
   <div class="hero-img float">
-    <img src="assets/example-maple.png" alt="Imagen generada por el modelo: un arce rojo bonsai sobre una laja de piedra" loading="eager">
-    <div class="tag">prompt: <b>“a red maple bonsai on a stone table”</b> · 512×512 · 33 s</div>
+    <img src="assets/example-maple.png" alt="a red maple bonsai on a stone table" loading="eager">
+    <div class="tag" data-i18n="hero_tag"></div>
   </div>
 </div></header>
 
-<!-- QUE ES -->
-<section id="que">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">¿Qué es esto?</div>
-      <h2>Un generador de imágenes que vive en una pestaña — y contesta como API.</h2>
-      <p>No hay una “nube mágica” corriendo el modelo. El modelo se descarga a tu navegador y usa <b>tu placa de video</b>. Esta herramienta le pone adelante una dirección web para que le puedas pedir imágenes desde afuera.</p>
-    </div>
-    <div class="cards">
-      <div class="card reveal">
-        <div class="ic">🖥️</div>
-        <h3>Corre en tu equipo</h3>
-        <p>El modelo (~3,2 GB) se baja una vez y queda guardado. La imagen se genera en tu GPU, con WebGPU. Cero inferencia en un servidor.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic">🔌</div>
-        <h3>Se usa como API</h3>
-        <p>Le mandás un texto por HTTP y te devuelve un PNG. Desde una terminal, un script, o cualquier app que hable HTTP.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic">🔒</div>
-        <h3>Privado y gratis</h3>
-        <p>La imagen se genera en tu máquina. Cloudflare solo hace de cartero entre tu pedido y tu pestaña. Todo en el plan gratuito.</p>
-      </div>
+<section id="que"><div class="wrap">
+  <div class="sec-head reveal">
+    <div class="eyebrow" data-i18n="que_eyebrow"></div>
+    <h2 data-i18n="que_h"></h2>
+    <p data-i18n="que_p"></p>
+  </div>
+  <div class="cards">
+    <div class="card reveal"><div class="ic">🖥️</div><h3 data-i18n="c1h"></h3><p data-i18n="c1p"></p></div>
+    <div class="card reveal"><div class="ic">🔌</div><h3 data-i18n="c2h"></h3><p data-i18n="c2p"></p></div>
+    <div class="card reveal"><div class="ic">🔒</div><h3 data-i18n="c3h"></h3><p data-i18n="c3p"></p></div>
+  </div>
+</div></section>
+
+<section id="como"><div class="wrap">
+  <div class="sec-head reveal">
+    <div class="eyebrow" data-i18n="como_eyebrow"></div>
+    <h2 data-i18n="como_h"></h2>
+    <p data-i18n="como_p"></p>
+  </div>
+  <div class="flow reveal">
+    <svg viewBox="0 0 900 220" role="img" aria-label="flow diagram">
+      <defs>
+        <marker id="arr" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8a7d6e"/></marker>
+        <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#e8a55e"/><stop offset="1" stop-color="#a9713a"/></linearGradient>
+      </defs>
+      <g font-family="Geist Mono, monospace" font-size="12">
+        <rect x="20" y="80" width="170" height="60" rx="10" fill="#16110d" stroke="#241d16"/>
+        <text x="105" y="105" fill="#f4ecde" text-anchor="middle" font-size="13" data-i18n="d_node1"></text>
+        <text x="105" y="123" fill="#8a7d6e" text-anchor="middle">POST /api/generate</text>
+        <rect x="365" y="80" width="170" height="60" rx="10" fill="#16110d" stroke="#241d16"/>
+        <text x="450" y="105" fill="#f4ecde" text-anchor="middle" font-size="13">Cloudflare</text>
+        <text x="450" y="123" fill="#8a7d6e" text-anchor="middle" data-i18n="d_node2sub"></text>
+        <rect x="710" y="80" width="170" height="60" rx="10" fill="#16110d" stroke="#2f6b52"/>
+        <text x="795" y="103" fill="#f4ecde" text-anchor="middle" font-size="13" data-i18n="d_node3"></text>
+        <text x="795" y="121" fill="#6fd39a" text-anchor="middle" data-i18n="d_node3sub"></text>
+      </g>
+      <path id="p1" d="M190,110 L365,110" stroke="#3a3128" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+      <path d="M710,128 C620,175 520,175 535,140" stroke="#3a3128" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+      <path d="M535,96 C620,45 700,55 710,92" stroke="#3a3128" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+      <text x="622" y="42" fill="#8a7d6e" text-anchor="middle" font-size="11" font-family="Geist Mono, monospace" data-i18n="d_ask"></text>
+      <text x="620" y="200" fill="#8a7d6e" text-anchor="middle" font-size="11" font-family="Geist Mono, monospace" data-i18n="d_return"></text>
+      <circle r="5" fill="url(#g1)"><animateMotion dur="2.4s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear"><mpath href="#p1"/></animateMotion></circle>
+    </svg>
+    <div class="flow-legend">
+      <div class="item"><div class="n">1</div><div class="t" data-i18n="leg1"></div></div>
+      <div class="item"><div class="n">2</div><div class="t" data-i18n="leg2"></div></div>
+      <div class="item"><div class="n">3</div><div class="t" data-i18n="leg3"></div></div>
+      <div class="item"><div class="n">4</div><div class="t" data-i18n="leg4"></div></div>
     </div>
   </div>
-</section>
+</div></section>
 
-<!-- COMO FUNCIONA -->
-<section id="como">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Cómo funciona</div>
-      <h2>Tu pedido viaja hasta tu propia pestaña, y vuelve con la imagen.</h2>
-      <p>Un navegador no tiene una dirección a la que llamar desde afuera — así que la pestaña es la que <b>pregunta</b> si hay trabajo. Cloudflare guarda tu pedido un instante hasta que la pestaña lo levanta.</p>
-    </div>
-    <div class="flow reveal">
-      <svg viewBox="0 0 900 220" role="img" aria-label="Diagrama del flujo: tu terminal envía a Cloudflare, la pestaña lo levanta, genera en la GPU y devuelve el PNG">
-        <defs>
-          <marker id="arr" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8a7d6e"/></marker>
-          <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#e8a55e"/><stop offset="1" stop-color="#a9713a"/></linearGradient>
-        </defs>
-        <!-- nodes -->
-        <g font-family="Geist Mono, monospace" font-size="12">
-          <rect x="20" y="80" width="170" height="60" rx="10" fill="#16110d" stroke="#241d16"/>
-          <text x="105" y="105" fill="#f4ecde" text-anchor="middle" font-size="13">Tu terminal</text>
-          <text x="105" y="123" fill="#8a7d6e" text-anchor="middle">POST /api/generate</text>
-
-          <rect x="365" y="80" width="170" height="60" rx="10" fill="#16110d" stroke="#241d16"/>
-          <text x="450" y="105" fill="#f4ecde" text-anchor="middle" font-size="13">Cloudflare</text>
-          <text x="450" y="123" fill="#8a7d6e" text-anchor="middle">guarda el pedido</text>
-
-          <rect x="710" y="80" width="170" height="60" rx="10" fill="#16110d" stroke="#2f6b52"/>
-          <text x="795" y="103" fill="#f4ecde" text-anchor="middle" font-size="13">Tu pestaña</text>
-          <text x="795" y="121" fill="#6fd39a" text-anchor="middle">genera en la GPU</text>
-        </g>
-        <!-- paths -->
-        <path id="p1" d="M190,110 L365,110" stroke="#3a3128" stroke-width="2" fill="none" marker-end="url(#arr)"/>
-        <path id="p2" d="M710,128 C620,175 520,175 535,140" stroke="#3a3128" stroke-width="2" fill="none" marker-end="url(#arr)" transform="translate(0,0)"/>
-        <path d="M535,96 C620,45 700,55 710,92" stroke="#3a3128" stroke-width="2" fill="none" marker-end="url(#arr)"/>
-        <text x="622" y="42" fill="#8a7d6e" text-anchor="middle" font-size="11" font-family="Geist Mono, monospace">la pestaña pregunta “¿hay trabajo?”</text>
-        <text x="620" y="200" fill="#8a7d6e" text-anchor="middle" font-size="11" font-family="Geist Mono, monospace">devuelve el PNG</text>
-        <!-- moving dot -->
-        <circle r="5" fill="url(#g1)"><animateMotion dur="2.4s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear"><mpath href="#p1"/></animateMotion></circle>
-      </svg>
-      <div class="flow-legend">
-        <div class="item"><div class="n">1</div><div class="t"><b>Pedís.</b> Un POST con tu texto llega a Cloudflare y vuelve al instante con un número de tarea.</div></div>
-        <div class="item"><div class="n">2</div><div class="t"><b>Espera.</b> Tu pestaña, que está preguntando seguido, levanta el pedido.</div></div>
-        <div class="item"><div class="n">3</div><div class="t"><b>Genera.</b> El modelo dibuja la imagen en tu GPU (~30–50 s), paso a paso.</div></div>
-        <div class="item"><div class="n">4</div><div class="t"><b>Bajás.</b> Consultás el estado con el número; cuando dice “listo”, descargás el PNG.</div></div>
-      </div>
+<section id="idea"><div class="wrap keybox">
+  <div class="txt reveal">
+    <div class="eyebrow" data-i18n="idea_eyebrow"></div>
+    <h2 data-i18n="idea_h"></h2>
+    <p data-i18n="idea_p1"></p>
+    <p class="muted" style="font-size:.92rem" data-i18n="idea_p2"></p>
+  </div>
+  <div class="tabmock reveal">
+    <div class="bar"><span class="dot" style="background:#ff5f56"></span><span class="dot" style="background:#ffbd2e"></span><span class="dot" style="background:#27c93f"></span><span class="u">tu-proyecto.pages.dev</span></div>
+    <div class="body">
+      <div class="panel-mock"><div class="h">API worker</div><div class="st"><span class="live"></span><span data-i18n="mock_listen"></span></div></div>
+      <p class="mono" style="color:var(--dim);font-size:11px;margin:.9rem 0 0" data-i18n="mock_note"></p>
     </div>
   </div>
-</section>
+</div></section>
 
-<!-- IDEA CLAVE -->
-<section id="idea">
-  <div class="wrap keybox">
-    <div class="txt reveal">
-      <div class="eyebrow">La idea clave</div>
-      <h2>Tu pestaña <em style="font-style:italic;color:var(--amber)">es</em> el motor.</h2>
-      <p>Mientras la tengas abierta con el modelo cargado, la API funciona. Si la cerrás, la API responde <span class="mono" style="color:var(--amber)">503 — sin worker</span>. No es un servicio que corre solo: <b>vos ponés la GPU</b>, y a cambio no pagás cómputo ni servidores.</p>
-      <p class="muted" style="font-size:.92rem">Es honesto por diseño: la privacidad y el costo cero salen justamente de que nada corre en un servidor.</p>
-    </div>
-    <div class="tabmock reveal">
-      <div class="bar">
-        <span class="dot" style="background:#ff5f56"></span><span class="dot" style="background:#ffbd2e"></span><span class="dot" style="background:#27c93f"></span>
-        <span class="u">tu-proyecto.pages.dev</span>
-      </div>
-      <div class="body">
-        <div class="panel-mock">
-          <div class="h">API worker</div>
-          <div class="st"><span class="live"></span>escuchando — modelo listo</div>
-        </div>
-        <p class="mono" style="color:var(--dim);font-size:11px;margin:.9rem 0 0">↑ mientras esto esté abierto, la API atiende</p>
-      </div>
-    </div>
+<section id="deploy"><div class="wrap">
+  <div class="sec-head reveal">
+    <div class="eyebrow" data-i18n="deploy_eyebrow"></div>
+    <h2 data-i18n="deploy_h"></h2>
+    <p data-i18n="deploy_p"></p>
   </div>
-</section>
-
-<!-- DEPLOY -->
-<section id="deploy">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Desplegarlo</div>
-      <h2>Ponerlo en línea toma unos minutos. Elegí un camino.</h2>
-      <p>Solo necesitás una cuenta de Cloudflare (el plan gratis alcanza). El resto lo hace el repo.</p>
-    </div>
-    <div class="steps">
-      <div class="step reveal">
-        <div class="k">Opción A · con comandos</div>
-        <h3>Wrangler (la CLI de Cloudflare)</h3>
-        <ol>
-          <li>Cloná el repo e instalá.</li>
-          <li>Creá el proyecto y elegí un secreto (una contraseña para la API).</li>
-          <li>Desplegá. Listo.</li>
-        </ol>
-        <div class="codeblock">
-          <button class="cp">copiar</button>
-          <pre><span class="tok-c"># 1) clonar</span>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="k" data-i18n="stepA_k"></div>
+      <h3 data-i18n="stepA_h"></h3>
+      <ol><li data-i18n="stepA_1"></li><li data-i18n="stepA_2"></li><li data-i18n="stepA_3"></li></ol>
+      <div class="codeblock"><button class="cp" data-i18n="copy"></button><pre><span class="tok-c" data-i18n="cA_c1"></span>
 git clone https://github.com/MauricioPerera/bonsai-image-api
 <span class="tok-f">cd</span> bonsai-image-api && npm install
 
-<span class="tok-c"># 2) crear proyecto + secreto</span>
+<span class="tok-c" data-i18n="cA_c2"></span>
 npx wrangler pages project create bonsai-image
 npx wrangler pages secret put API_SECRET
 
-<span class="tok-c"># 3) desplegar</span>
-npm run deploy</pre>
-        </div>
-      </div>
-      <div class="step reveal">
-        <div class="k">Opción B · sin comandos</div>
-        <h3>Conectando el repo en el panel</h3>
-        <ol>
-          <li>Hacé un <b>fork</b> del repo en tu GitHub.</li>
-          <li>En Cloudflare: <b>Workers &amp; Pages → Create → Pages → Connect to Git</b>, elegí tu fork.</li>
-          <li>Build command: <code>npm run build</code> · Output: <code>_site</code>.</li>
-          <li>Agregá la variable <code>API_SECRET</code> (una contraseña tuya) y <b>volvé a desplegar</b>.</li>
-        </ol>
-        <p class="muted" style="font-size:.86rem;margin-top:.8rem">Un secreto en Cloudflare solo toma efecto en despliegues <b>nuevos</b>: por eso hay que redesplegar después de agregarlo.</p>
-      </div>
+<span class="tok-c" data-i18n="cA_c3"></span>
+npm run deploy</pre></div>
     </div>
-    <p class="dim" style="margin-top:1.4rem;font-size:.9rem">Al desplegar, el build descarga la app de imágenes de Hugging Face y le suma la capa de API. Nada se copia ni redistribuye — siempre toma la versión actual.</p>
+    <div class="step reveal">
+      <div class="k" data-i18n="stepB_k"></div>
+      <h3 data-i18n="stepB_h"></h3>
+      <ol><li data-i18n="stepB_1"></li><li data-i18n="stepB_2"></li><li data-i18n="stepB_3"></li><li data-i18n="stepB_4"></li></ol>
+      <p class="muted" style="font-size:.86rem;margin-top:.8rem" data-i18n="stepB_note"></p>
+    </div>
   </div>
-</section>
+  <p class="dim" style="margin-top:1.4rem;font-size:.9rem" data-i18n="deploy_foot"></p>
+</div></section>
 
-<!-- USAR -->
-<section id="usar">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Usarlo</div>
-      <h2>Pedís una imagen, seguís el progreso, la bajás.</h2>
-      <p>Como generar tarda medio minuto, la API te da un número de tarea al instante y vos consultás cuándo está — sin esperar colgado.</p>
-    </div>
-    <div class="apiflow">
-      <div class="reveal">
-        <div class="codeblock">
-          <button class="cp">copiar</button>
-          <pre><span class="tok-c"># 1) pedir (devuelve un id al instante)</span>
+<section id="usar"><div class="wrap">
+  <div class="sec-head reveal">
+    <div class="eyebrow" data-i18n="use_eyebrow"></div>
+    <h2 data-i18n="use_h"></h2>
+    <p data-i18n="use_p"></p>
+  </div>
+  <div class="apiflow">
+    <div class="reveal">
+      <div class="codeblock"><button class="cp" data-i18n="copy"></button><pre><span class="tok-c" data-i18n="cU_c1"></span>
 curl -X POST $URL/api/generate \
   -H <span class="tok-s">"Authorization: Bearer $SECRET"</span> \
   -d <span class="tok-s">'{"prompt":"a bonsai tree at sunset"}'</span>
 
-<span class="tok-c"># 2) consultar el estado con ese id</span>
+<span class="tok-c" data-i18n="cU_c2"></span>
 curl $URL/api/tasks/<span class="tok-f">$id</span> -H <span class="tok-s">"Authorization: Bearer $SECRET"</span>
 
-<span class="tok-c"># 3) bajar el PNG cuando dice "done"</span>
-curl $URL/api/image/<span class="tok-f">$id</span> -H <span class="tok-s">"Authorization: Bearer $SECRET"</span> -o out.png</pre>
-        </div>
-        <p class="dim" style="font-size:.86rem">Todos los endpoints piden el secreto (salvo <code>/api/health</code>) y fallan cerrados si falta.</p>
+<span class="tok-c" data-i18n="cU_c3"></span>
+curl $URL/api/image/<span class="tok-f">$id</span> -H <span class="tok-s">"Authorization: Bearer $SECRET"</span> -o out.png</pre></div>
+      <p class="dim" style="font-size:.86rem" data-i18n="use_note"></p>
+    </div>
+    <div class="reveal">
+      <p class="eyebrow" style="margin-bottom:.8rem" data-i18n="poll_cap"></p>
+      <div class="poll" id="pollDemo">
+        <div class="ln"><span class="st">queued</span></div>
+        <div class="ln"><span class="st">running</span> · step 1/4<span class="bar" style="width:20px"></span></div>
+        <div class="ln"><span class="st">running</span> · step 2/4<span class="bar" style="width:44px"></span></div>
+        <div class="ln"><span class="st">running</span> · step 3/4<span class="bar" style="width:70px"></span></div>
+        <div class="ln"><span class="st">running</span> · step 4/4<span class="bar" style="width:96px"></span></div>
+        <div class="ln done"><span class="st">done</span> · 32943 ms · seed 987556447</div>
       </div>
-      <div class="reveal">
-        <p class="eyebrow" style="margin-bottom:.8rem">Sondeando la tarea, ves esto:</p>
-        <div class="poll" id="pollDemo">
-          <div class="ln"><span class="st">queued</span></div>
-          <div class="ln"><span class="st">running</span> · step 1/4<span class="bar" style="width:20px"></span></div>
-          <div class="ln"><span class="st">running</span> · step 2/4<span class="bar" style="width:44px"></span></div>
-          <div class="ln"><span class="st">running</span> · step 3/4<span class="bar" style="width:70px"></span></div>
-          <div class="ln"><span class="st">running</span> · step 4/4<span class="bar" style="width:96px"></span></div>
-          <div class="ln done"><span class="st">done</span> · 32943 ms · seed 987556447</div>
-        </div>
-        <p class="dim" style="font-size:.86rem;margin-top:.9rem">El <code>step N/4</code> es progreso real: sale del propio motor de difusión.</p>
-      </div>
+      <p class="dim" style="font-size:.86rem;margin-top:.9rem" data-i18n="poll_note"></p>
     </div>
   </div>
-</section>
+</div></section>
 
-<!-- DEVICE CHECK -->
-<section id="requisitos">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">¿Tu equipo puede?</div>
-      <h2>Un chequeo te avisa antes de bajar 3,2 GB.</h2>
-      <p>Al abrir la página aparece un panel con lo que tu dispositivo tiene. Atrapa lo que <b>con certeza no</b> puede correr el modelo — sin WebGPU, sin placa disponible, poco disco — antes de gastar la descarga.</p>
+<section id="requisitos"><div class="wrap">
+  <div class="sec-head reveal">
+    <div class="eyebrow" data-i18n="req_eyebrow"></div>
+    <h2 data-i18n="req_h"></h2>
+    <p data-i18n="req_p"></p>
+  </div>
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:2rem;align-items:center" class="reveal">
+    <div class="devpanel" id="landingDev">
+      <div class="h" data-i18n="req_panel_h"></div>
+      <div id="landingDevBody" style="opacity:.7" data-i18n="req_checking"></div>
     </div>
-    <div style="display:grid;grid-template-columns:auto 1fr;gap:2rem;align-items:center" class="reveal">
-      <div class="devpanel" id="landingDev">
-        <div class="h">Requisitos de <em style="font-style:normal;color:var(--amber)">tu</em> dispositivo</div>
-        <div id="landingDevBody" style="opacity:.7">comprobando tu equipo…</div>
-      </div>
-      <div style="max-width:34ch">
-        <p class="muted">Este panel <b>chequea tu equipo de verdad</b>, ahora — con el WebGPU de este navegador, sin descargar nada. Así sabés si te va a correr <b>antes</b> de desplegar.</p>
-        <p class="muted" style="font-size:.9rem">Es honesto a propósito: este modelo se <b>adapta</b> a la placa que tengas, así que no promete un “va a andar” garantizado — pero sí te frena si es imposible. Los teléfonos, por ejemplo, quedan afuera y te lo dice al toque.</p>
-      </div>
+    <div style="max-width:34ch">
+      <p class="muted" data-i18n="req_side1"></p>
+      <p class="muted" style="font-size:.9rem" data-i18n="req_side2"></p>
     </div>
   </div>
-</section>
+</div></section>
 
-<!-- HONESTO -->
-<section id="honesto">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Lo que conviene saber</div>
-      <h2>Sin letra chica.</h2>
-    </div>
-    <div class="honest">
-      <div class="h reveal"><b>La pestaña tiene que estar abierta.</b><span>Es el motor. Cerrala y la API responde 503. Se “enciende” a mano una vez por sesión.</span></div>
-      <div class="h reveal"><b>La primera carga tarda ~15 minutos.</b><span>Son 3,2 GB desde Hugging Face. Después queda en caché y abre al instante.</span></div>
-      <div class="h reveal"><b>Una imagen a la vez.</b><span>Es una sola GPU. Los pedidos que llegan mientras hay uno en curso reciben 429.</span></div>
-      <div class="h reveal"><b>Necesita Chrome/Edge de escritorio con WebGPU.</b><span>El chequeo de requisitos te lo confirma antes de bajar nada.</span></div>
-    </div>
+<section id="honesto"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow" data-i18n="honest_eyebrow"></div><h2 data-i18n="honest_h"></h2></div>
+  <div class="honest">
+    <div class="h reveal"><b data-i18n="h1b"></b><span data-i18n="h1s"></span></div>
+    <div class="h reveal"><b data-i18n="h2b"></b><span data-i18n="h2s"></span></div>
+    <div class="h reveal"><b data-i18n="h3b"></b><span data-i18n="h3s"></span></div>
+    <div class="h reveal"><b data-i18n="h4b"></b><span data-i18n="h4s"></span></div>
   </div>
-</section>
+</div></section>
 
 <footer><div class="wrap">
   <div>
     <div style="font-family:'Instrument Serif',serif;font-size:20px;color:var(--cream)">Bonsai <span style="color:var(--amber)">Image API</span></div>
-    <p class="attrib">Este proyecto es solo la capa de API. La app de imágenes es de <a href="https://huggingface.co/spaces/webml-community/bonsai-image-webgpu" target="_blank" rel="noopener">webml-community</a> y los modelos de <a href="https://huggingface.co/prism-ml" target="_blank" rel="noopener">prism-ml</a>, bajo sus propios términos. Código bajo licencia MIT.</p>
+    <p class="attrib" data-i18n="foot_attrib"></p>
   </div>
   <div style="display:flex;gap:1.2rem">
-    <a href="https://github.com/MauricioPerera/bonsai-image-api" target="_blank" rel="noopener">Repositorio ↗</a>
-    <a href="#deploy">Desplegar</a>
+    <a href="https://github.com/MauricioPerera/bonsai-image-api" target="_blank" rel="noopener" data-i18n="foot_repo"></a>
+    <a href="#deploy" data-i18n="foot_deploy"></a>
   </div>
 </div></footer>
 
 <script>
-  // reveal on scroll
-  const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.14});
-  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const I18N = {
+  es:{
+    copy:"copiar", nav_how:"Cómo funciona", nav_deploy:"Desplegar", nav_use:"Usar",
+    hero_eyebrow:"plan gratis",
+    hero_title:'Generá imágenes con IA <em>desde tu navegador</em>, como una API.',
+    hero_lead:"Un modelo de 4 mil millones de parámetros corre entero en tu navegador. Vos lo exponés como una API HTTP — sin servidor, sin costo, y tus datos nunca salen de tu máquina.",
+    hero_cta1:"Desplegarlo →", hero_cta2:"Ver el código",
+    pill1:"100% en tu equipo", pill2:"gratis", pill3:"sin servidor propio",
+    hero_tag:'prompt: <b>“a red maple bonsai on a stone table”</b> · 512×512 · 33 s',
+    que_eyebrow:"¿Qué es esto?", que_h:"Un generador de imágenes que vive en una pestaña — y contesta como API.",
+    que_p:"No hay una “nube mágica” corriendo el modelo. El modelo se descarga a tu navegador y usa <b>tu placa de video</b>. Esta herramienta le pone adelante una dirección web para pedirle imágenes desde afuera.",
+    c1h:"Corre en tu equipo", c1p:"El modelo (~3,2 GB) se baja una vez y queda guardado. La imagen se genera en tu GPU, con WebGPU. Cero inferencia en un servidor.",
+    c2h:"Se usa como API", c2p:"Le mandás un texto por HTTP y te devuelve un PNG. Desde una terminal, un script, o cualquier app que hable HTTP.",
+    c3h:"Privado y gratis", c3p:"La imagen se genera en tu máquina. Cloudflare solo hace de cartero entre tu pedido y tu pestaña. Todo en el plan gratuito.",
+    como_eyebrow:"Cómo funciona", como_h:"Tu pedido viaja hasta tu propia pestaña, y vuelve con la imagen.",
+    como_p:"Un navegador no tiene una dirección a la que llamar desde afuera — así que la pestaña es la que <b>pregunta</b> si hay trabajo. Cloudflare guarda tu pedido un instante hasta que la pestaña lo levanta.",
+    d_node1:"Tu terminal", d_node2sub:"guarda el pedido", d_node3:"Tu pestaña", d_node3sub:"genera en la GPU",
+    d_ask:"la pestaña pregunta “¿hay trabajo?”", d_return:"devuelve el PNG",
+    leg1:"<b>Pedís.</b> Un POST con tu texto llega a Cloudflare y vuelve al instante con un número de tarea.",
+    leg2:"<b>Espera.</b> Tu pestaña, que está preguntando seguido, levanta el pedido.",
+    leg3:"<b>Genera.</b> El modelo dibuja la imagen en tu GPU (~30–50 s), paso a paso.",
+    leg4:"<b>Bajás.</b> Consultás el estado con el número; cuando dice “listo”, descargás el PNG.",
+    idea_eyebrow:"La idea clave", idea_h:'Tu pestaña <em>es</em> el motor.',
+    idea_p1:'Mientras la tengas abierta con el modelo cargado, la API funciona. Si la cerrás, responde <span class="mono" style="color:var(--amber)">503 — sin worker</span>. No es un servicio que corre solo: <b>vos ponés la GPU</b>, y a cambio no pagás cómputo ni servidores.',
+    idea_p2:"Es honesto por diseño: la privacidad y el costo cero salen justamente de que nada corre en un servidor.",
+    mock_listen:"escuchando — modelo listo", mock_note:"↑ mientras esto esté abierto, la API atiende",
+    deploy_eyebrow:"Desplegarlo", deploy_h:"Ponerlo en línea toma unos minutos. Elegí un camino.",
+    deploy_p:"Solo necesitás una cuenta de Cloudflare (el plan gratis alcanza). El resto lo hace el repo.",
+    stepA_k:"Opción A · con comandos", stepA_h:"Wrangler (la CLI de Cloudflare)",
+    stepA_1:"Cloná el repo e instalá.", stepA_2:"Creá el proyecto y elegí un secreto (una contraseña para la API).", stepA_3:"Desplegá. Listo.",
+    cA_c1:"# 1) clonar", cA_c2:"# 2) crear proyecto + secreto", cA_c3:"# 3) desplegar",
+    stepB_k:"Opción B · sin comandos", stepB_h:"Conectando el repo en el panel",
+    stepB_1:"Hacé un <b>fork</b> del repo en tu GitHub.", stepB_2:"En Cloudflare: <b>Workers &amp; Pages → Create → Pages → Connect to Git</b>, elegí tu fork.",
+    stepB_3:"Build command: <code>npm run build</code> · Output: <code>_site</code>.", stepB_4:"Agregá la variable <code>API_SECRET</code> (una contraseña tuya) y <b>volvé a desplegar</b>.",
+    stepB_note:"Un secreto en Cloudflare solo toma efecto en despliegues <b>nuevos</b>: por eso hay que redesplegar después de agregarlo.",
+    deploy_foot:"Al desplegar, el build descarga la app de imágenes de Hugging Face y le suma la capa de API. Nada se copia ni redistribuye — siempre toma la versión actual.",
+    use_eyebrow:"Usarlo", use_h:"Pedís una imagen, seguís el progreso, la bajás.",
+    use_p:"Como generar tarda medio minuto, la API te da un número de tarea al instante y vos consultás cuándo está — sin esperar colgado.",
+    cU_c1:"# 1) pedir (devuelve un id al instante)", cU_c2:"# 2) consultar el estado con ese id", cU_c3:'# 3) bajar el PNG cuando dice "done"',
+    use_note:"Todos los endpoints piden el secreto (salvo <code>/api/health</code>) y fallan cerrados si falta.",
+    poll_cap:"Sondeando la tarea, ves esto:", poll_note:"El <code>step N/4</code> es progreso real: sale del propio motor de difusión.",
+    req_eyebrow:"¿Tu equipo puede?", req_h:"Un chequeo te avisa antes de bajar 3,2 GB.",
+    req_p:"Al abrir la página aparece un panel con lo que tu dispositivo tiene. Atrapa lo que <b>con certeza no</b> puede correr el modelo — sin WebGPU, sin placa disponible, poco disco — antes de gastar la descarga.",
+    req_panel_h:'Requisitos de <em style="font-style:normal;color:var(--amber)">tu</em> dispositivo', req_checking:"comprobando tu equipo…",
+    req_side1:"Este panel <b>chequea tu equipo de verdad</b>, ahora — con el WebGPU de este navegador, sin descargar nada. Así sabés si te va a correr <b>antes</b> de desplegar.",
+    req_side2:"Es honesto a propósito: este modelo se <b>adapta</b> a la placa que tengas, así que no promete un “va a andar” garantizado — pero sí te frena si es imposible. Los teléfonos, por ejemplo, quedan afuera y te lo dice al toque.",
+    honest_eyebrow:"Lo que conviene saber", honest_h:"Sin letra chica.",
+    h1b:"La pestaña tiene que estar abierta.", h1s:"Es el motor. Cerrala y la API responde 503. Se “enciende” a mano una vez por sesión.",
+    h2b:"La primera carga tarda ~15 minutos.", h2s:"Son 3,2 GB desde Hugging Face. Después queda en caché y abre al instante.",
+    h3b:"Una imagen a la vez.", h3s:"Es una sola GPU. Los pedidos que llegan mientras hay uno en curso reciben 429.",
+    h4b:"Necesita Chrome/Edge de escritorio con WebGPU.", h4s:"El chequeo de requisitos te lo confirma antes de bajar nada.",
+    foot_attrib:'Este proyecto es solo la capa de API. La app de imágenes es de <a href="https://huggingface.co/spaces/webml-community/bonsai-image-webgpu" target="_blank" rel="noopener">webml-community</a> y los modelos de <a href="https://huggingface.co/prism-ml" target="_blank" rel="noopener">prism-ml</a>, bajo sus propios términos. Código bajo licencia MIT.',
+    foot_repo:"Repositorio ↗", foot_deploy:"Desplegar",
+    dev_nowebgpu:"<strong>Sin WebGPU.</strong> Este navegador no puede correr el modelo. Probá desde Chrome o Edge de escritorio.",
+    dev_noadapter:"<strong>WebGPU sin adapter.</strong> La GPU de este dispositivo no está disponible para el navegador.",
+    dev_disk:"Disco (necesita ≥4 GB)", dev_mobile:" (móvil)",
+    dev_f16no:"NO (los matmul lo usan)", dev_sub:"subgroups (acelera)",
+    dev_vbad:"<strong>No puede:</strong> el disco disponible ({q}) no entra el modelo de ~3.2 GB.",
+    dev_vwarn:"Cumple lo básico pero <strong>falta shader-f16</strong>, que los matmul usan — puede que no funcione. Se prueba corriendo.",
+    dev_vok:"<strong>Cumple los requisitos chequeables.</strong> El modelo se adapta a tu GPU. Descarga: ~3.2 GB la primera vez.",
+    dev_note:"Este modelo no declara un mínimo duro: pide lo que tu GPU tenga. Esto atrapa lo que con certeza no puede; el resto se prueba corriendo."
+  },
+  en:{
+    copy:"copy", nav_how:"How it works", nav_deploy:"Deploy", nav_use:"Use it",
+    hero_eyebrow:"free plan",
+    hero_title:'Generate AI images <em>from your browser</em>, as an API.',
+    hero_lead:"A 4-billion-parameter model runs entirely in your browser. You expose it as an HTTP API — no server, no cost, and your data never leaves your machine.",
+    hero_cta1:"Deploy it →", hero_cta2:"View the code",
+    pill1:"100% on your machine", pill2:"free", pill3:"no server of your own",
+    hero_tag:'prompt: <b>“a red maple bonsai on a stone table”</b> · 512×512 · 33 s',
+    que_eyebrow:"What is this?", que_h:"An image generator that lives in a tab — and answers like an API.",
+    que_p:"There's no “magic cloud” running the model. The model downloads to your browser and uses <b>your graphics card</b>. This tool puts a web address in front of it so you can ask for images from outside.",
+    c1h:"Runs on your machine", c1p:"The model (~3.2 GB) downloads once and is cached. Images are generated on your GPU, via WebGPU. Zero server-side inference.",
+    c2h:"Used like an API", c2p:"Send it a text over HTTP and it returns a PNG. From a terminal, a script, or any app that speaks HTTP.",
+    c3h:"Private and free", c3p:"The image is generated on your machine. Cloudflare just relays between your request and your tab. All on the free plan.",
+    como_eyebrow:"How it works", como_h:"Your request travels to your own tab, and comes back with the image.",
+    como_p:"A browser has no address to call from outside — so the tab is the one that <b>asks</b> whether there's work. Cloudflare holds your request for a moment until the tab picks it up.",
+    d_node1:"Your terminal", d_node2sub:"holds the request", d_node3:"Your tab", d_node3sub:"generates on the GPU",
+    d_ask:"the tab asks “any work?”", d_return:"returns the PNG",
+    leg1:"<b>You ask.</b> A POST with your text reaches Cloudflare and returns at once with a task id.",
+    leg2:"<b>It waits.</b> Your tab, which keeps asking, picks up the request.",
+    leg3:"<b>It generates.</b> The model draws the image on your GPU (~30–50 s), step by step.",
+    leg4:"<b>You download.</b> Poll the status with the id; when it says “done”, download the PNG.",
+    idea_eyebrow:"The key idea", idea_h:'Your tab <em>is</em> the engine.',
+    idea_p1:"While it's open with the model loaded, the API works. Close it and it answers <span class=\"mono\" style=\"color:var(--amber)\">503 — no worker</span>. It's not a service that runs by itself: <b>you provide the GPU</b>, and in return you pay for no compute and no servers.",
+    idea_p2:"Honest by design: the privacy and the zero cost come precisely from nothing running on a server.",
+    mock_listen:"listening — model ready", mock_note:"↑ while this is open, the API serves",
+    deploy_eyebrow:"Deploy it", deploy_h:"Getting it online takes a few minutes. Pick a path.",
+    deploy_p:"You only need a Cloudflare account (the free plan is enough). The repo does the rest.",
+    stepA_k:"Option A · with commands", stepA_h:"Wrangler (Cloudflare's CLI)",
+    stepA_1:"Clone the repo and install.", stepA_2:"Create the project and choose a secret (a password for the API).", stepA_3:"Deploy. Done.",
+    cA_c1:"# 1) clone", cA_c2:"# 2) create project + secret", cA_c3:"# 3) deploy",
+    stepB_k:"Option B · no commands", stepB_h:"Connecting the repo in the dashboard",
+    stepB_1:"<b>Fork</b> the repo on your GitHub.", stepB_2:"In Cloudflare: <b>Workers &amp; Pages → Create → Pages → Connect to Git</b>, pick your fork.",
+    stepB_3:"Build command: <code>npm run build</code> · Output: <code>_site</code>.", stepB_4:"Add the <code>API_SECRET</code> variable (a password of yours) and <b>redeploy</b>.",
+    stepB_note:"A Cloudflare secret only takes effect on <b>new</b> deployments: that's why you redeploy after adding it.",
+    deploy_foot:"On deploy, the build downloads the image app from Hugging Face and adds the API layer. Nothing is copied or redistributed — always the current version.",
+    use_eyebrow:"Use it", use_h:"Ask for an image, follow the progress, download it.",
+    use_p:"Since generating takes half a minute, the API gives you a task id at once and you poll for when it's ready — no hanging.",
+    cU_c1:"# 1) ask (returns an id at once)", cU_c2:"# 2) poll the status with that id", cU_c3:'# 3) download the PNG once it says "done"',
+    use_note:"Every endpoint requires the secret (except <code>/api/health</code>) and fails closed without it.",
+    poll_cap:"Polling the task, you see this:", poll_note:"The <code>step N/4</code> is real progress: it comes from the diffusion engine itself.",
+    req_eyebrow:"Can your machine run it?", req_h:"A check warns you before downloading 3.2 GB.",
+    req_p:"When the page opens, a panel shows what your device has. It catches what <b>definitely can't</b> run the model — no WebGPU, no adapter, too little disk — before spending the download.",
+    req_panel_h:'Requirements of <em style="font-style:normal;color:var(--amber)">your</em> device', req_checking:"checking your machine…",
+    req_side1:"This panel <b>actually checks your machine</b>, right now — using this browser's WebGPU, downloading nothing. So you know whether it'll run <b>before</b> deploying.",
+    req_side2:"Honest on purpose: this model <b>adapts</b> to whatever card you have, so it doesn't promise a guaranteed “it'll work” — but it does stop you if it's impossible. Phones, for instance, are out and it tells you right away.",
+    honest_eyebrow:"Good to know", honest_h:"No fine print.",
+    h1b:"The tab has to stay open.", h1s:"It's the engine. Close it and the API answers 503. It's armed by hand once per session.",
+    h2b:"First load takes ~15 minutes.", h2s:"It's 3.2 GB from Hugging Face. After that it's cached and opens instantly.",
+    h3b:"One image at a time.", h3s:"It's a single GPU. Requests arriving while one is in flight get 429.",
+    h4b:"Needs desktop Chrome/Edge with WebGPU.", h4s:"The requirements check confirms it before downloading anything.",
+    foot_attrib:'This project is the API layer only. The image app is by <a href="https://huggingface.co/spaces/webml-community/bonsai-image-webgpu" target="_blank" rel="noopener">webml-community</a> and the models by <a href="https://huggingface.co/prism-ml" target="_blank" rel="noopener">prism-ml</a>, under their own terms. Code under the MIT license.',
+    foot_repo:"Repository ↗", foot_deploy:"Deploy",
+    dev_nowebgpu:"<strong>No WebGPU.</strong> This browser can't run the model. Try desktop Chrome or Edge.",
+    dev_noadapter:"<strong>WebGPU but no adapter.</strong> This device's GPU isn't available to the browser.",
+    dev_disk:"Disk (needs ≥4 GB)", dev_mobile:" (mobile)",
+    dev_f16no:"NO (the matmuls use it)", dev_sub:"subgroups (speeds up)",
+    dev_vbad:"<strong>Can't run it:</strong> available disk ({q}) doesn't fit the ~3.2 GB model.",
+    dev_vwarn:"Meets the basics but <strong>shader-f16 is missing</strong>, which the matmuls use — it may not work. Proven by running.",
+    dev_vok:"<strong>Meets the checkable requirements.</strong> The model adapts to your GPU. Download: ~3.2 GB the first time.",
+    dev_note:"This model declares no hard minimum: it requests whatever your GPU has. This catches what definitely can't; the rest is proven by running."
+  },
+  pt:{
+    copy:"copiar", nav_how:"Como funciona", nav_deploy:"Implantar", nav_use:"Usar",
+    hero_eyebrow:"plano gratuito",
+    hero_title:'Gere imagens com IA <em>no seu navegador</em>, como uma API.',
+    hero_lead:"Um modelo de 4 bilhões de parâmetros roda inteiro no seu navegador. Você o expõe como uma API HTTP — sem servidor, sem custo, e seus dados nunca saem da sua máquina.",
+    hero_cta1:"Implantar →", hero_cta2:"Ver o código",
+    pill1:"100% na sua máquina", pill2:"grátis", pill3:"sem servidor próprio",
+    hero_tag:'prompt: <b>“a red maple bonsai on a stone table”</b> · 512×512 · 33 s',
+    que_eyebrow:"O que é isto?", que_h:"Um gerador de imagens que vive numa aba — e responde como uma API.",
+    que_p:"Não existe uma “nuvem mágica” rodando o modelo. O modelo é baixado no seu navegador e usa <b>a sua placa de vídeo</b>. Esta ferramenta coloca um endereço web na frente dele para você pedir imagens de fora.",
+    c1h:"Roda na sua máquina", c1p:"O modelo (~3,2 GB) é baixado uma vez e fica salvo. A imagem é gerada na sua GPU, via WebGPU. Zero inferência num servidor.",
+    c2h:"Usado como API", c2p:"Você manda um texto por HTTP e ele devolve um PNG. De um terminal, um script, ou qualquer app que fale HTTP.",
+    c3h:"Privado e grátis", c3p:"A imagem é gerada na sua máquina. A Cloudflare só faz o correio entre o seu pedido e a sua aba. Tudo no plano gratuito.",
+    como_eyebrow:"Como funciona", como_h:"Seu pedido viaja até a sua própria aba, e volta com a imagem.",
+    como_p:"Um navegador não tem um endereço para ser chamado de fora — então é a aba que <b>pergunta</b> se há trabalho. A Cloudflare guarda seu pedido por um instante até a aba pegá-lo.",
+    d_node1:"Seu terminal", d_node2sub:"guarda o pedido", d_node3:"Sua aba", d_node3sub:"gera na GPU",
+    d_ask:"a aba pergunta “tem trabalho?”", d_return:"devolve o PNG",
+    leg1:"<b>Você pede.</b> Um POST com seu texto chega à Cloudflare e volta na hora com um número de tarefa.",
+    leg2:"<b>Espera.</b> Sua aba, que fica perguntando, pega o pedido.",
+    leg3:"<b>Gera.</b> O modelo desenha a imagem na sua GPU (~30–50 s), passo a passo.",
+    leg4:"<b>Você baixa.</b> Consulta o status com o número; quando diz “pronto”, baixa o PNG.",
+    idea_eyebrow:"A ideia central", idea_h:'Sua aba <em>é</em> o motor.',
+    idea_p1:'Enquanto estiver aberta com o modelo carregado, a API funciona. Se fechar, responde <span class="mono" style="color:var(--amber)">503 — sem worker</span>. Não é um serviço que roda sozinho: <b>você fornece a GPU</b>, e em troca não paga computação nem servidores.',
+    idea_p2:"Honesto por design: a privacidade e o custo zero vêm justamente de nada rodar num servidor.",
+    mock_listen:"escutando — modelo pronto", mock_note:"↑ enquanto isto estiver aberto, a API atende",
+    deploy_eyebrow:"Implantar", deploy_h:"Colocar no ar leva alguns minutos. Escolha um caminho.",
+    deploy_p:"Você só precisa de uma conta na Cloudflare (o plano grátis basta). O resto o repositório faz.",
+    stepA_k:"Opção A · com comandos", stepA_h:"Wrangler (a CLI da Cloudflare)",
+    stepA_1:"Clone o repositório e instale.", stepA_2:"Crie o projeto e escolha um segredo (uma senha para a API).", stepA_3:"Implante. Pronto.",
+    cA_c1:"# 1) clonar", cA_c2:"# 2) criar projeto + segredo", cA_c3:"# 3) implantar",
+    stepB_k:"Opção B · sem comandos", stepB_h:"Conectando o repositório no painel",
+    stepB_1:"Faça um <b>fork</b> do repositório no seu GitHub.", stepB_2:"Na Cloudflare: <b>Workers &amp; Pages → Create → Pages → Connect to Git</b>, escolha seu fork.",
+    stepB_3:"Build command: <code>npm run build</code> · Output: <code>_site</code>.", stepB_4:"Adicione a variável <code>API_SECRET</code> (uma senha sua) e <b>implante de novo</b>.",
+    stepB_note:"Um segredo na Cloudflare só vale em implantações <b>novas</b>: por isso é preciso reimplantar depois de adicioná-lo.",
+    deploy_foot:"Ao implantar, o build baixa o app de imagens do Hugging Face e soma a camada de API. Nada é copiado nem redistribuído — sempre a versão atual.",
+    use_eyebrow:"Usar", use_h:"Peça uma imagem, acompanhe o progresso, baixe.",
+    use_p:"Como gerar leva meio minuto, a API te dá um número de tarefa na hora e você consulta quando está pronta — sem ficar travado esperando.",
+    cU_c1:"# 1) pedir (devolve um id na hora)", cU_c2:"# 2) consultar o status com esse id", cU_c3:'# 3) baixar o PNG quando disser "done"',
+    use_note:"Todos os endpoints pedem o segredo (menos <code>/api/health</code>) e falham fechados se faltar.",
+    poll_cap:"Consultando a tarefa, você vê isto:", poll_note:"O <code>step N/4</code> é progresso real: vem do próprio motor de difusão.",
+    req_eyebrow:"Sua máquina aguenta?", req_h:"Uma verificação te avisa antes de baixar 3,2 GB.",
+    req_p:"Ao abrir a página, um painel mostra o que seu dispositivo tem. Ele pega o que <b>com certeza não</b> roda o modelo — sem WebGPU, sem placa disponível, pouco disco — antes de gastar o download.",
+    req_panel_h:'Requisitos do <em style="font-style:normal;color:var(--amber)">seu</em> dispositivo', req_checking:"verificando sua máquina…",
+    req_side1:"Este painel <b>verifica sua máquina de verdade</b>, agora — com o WebGPU deste navegador, sem baixar nada. Assim você sabe se vai rodar <b>antes</b> de implantar.",
+    req_side2:"Honesto de propósito: este modelo se <b>adapta</b> à placa que você tiver, então não promete um “vai rodar” garantido — mas te barra se for impossível. Celulares, por exemplo, ficam de fora e ele avisa na hora.",
+    honest_eyebrow:"O que convém saber", honest_h:"Sem letras miúdas.",
+    h1b:"A aba precisa ficar aberta.", h1s:"É o motor. Feche e a API responde 503. É ligada à mão uma vez por sessão.",
+    h2b:"A primeira carga leva ~15 minutos.", h2s:"São 3,2 GB do Hugging Face. Depois fica em cache e abre na hora.",
+    h3b:"Uma imagem por vez.", h3s:"É uma única GPU. Pedidos que chegam com um em andamento recebem 429.",
+    h4b:"Precisa de Chrome/Edge desktop com WebGPU.", h4s:"A verificação de requisitos confirma isso antes de baixar qualquer coisa.",
+    foot_attrib:'Este projeto é só a camada de API. O app de imagens é da <a href="https://huggingface.co/spaces/webml-community/bonsai-image-webgpu" target="_blank" rel="noopener">webml-community</a> e os modelos da <a href="https://huggingface.co/prism-ml" target="_blank" rel="noopener">prism-ml</a>, sob seus próprios termos. Código sob licença MIT.',
+    foot_repo:"Repositório ↗", foot_deploy:"Implantar",
+    dev_nowebgpu:"<strong>Sem WebGPU.</strong> Este navegador não roda o modelo. Tente no Chrome ou Edge desktop.",
+    dev_noadapter:"<strong>WebGPU sem adapter.</strong> A GPU deste dispositivo não está disponível para o navegador.",
+    dev_disk:"Disco (precisa ≥4 GB)", dev_mobile:" (celular)",
+    dev_f16no:"NÃO (os matmul usam)", dev_sub:"subgroups (acelera)",
+    dev_vbad:"<strong>Não roda:</strong> o disco disponível ({q}) não cabe o modelo de ~3.2 GB.",
+    dev_vwarn:"Cumpre o básico mas <strong>falta shader-f16</strong>, que os matmul usam — pode não funcionar. Se prova rodando.",
+    dev_vok:"<strong>Cumpre os requisitos verificáveis.</strong> O modelo se adapta à sua GPU. Download: ~3.2 GB na primeira vez.",
+    dev_note:"Este modelo não declara um mínimo rígido: pede o que a sua GPU tiver. Isto pega o que com certeza não roda; o resto se prova rodando."
+  }
+};
 
-  // copy buttons
-  document.querySelectorAll('.codeblock .cp').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const code=btn.parentElement.querySelector('pre').innerText;
-      navigator.clipboard.writeText(code).then(()=>{const t=btn.textContent;btn.textContent='copiado ✓';setTimeout(()=>btn.textContent=t,1400);});
-    });
+let LANG = 'en';
+function pickLang(){
+  const saved = localStorage.getItem('lang');
+  if(saved && I18N[saved]) return saved;
+  const n = (navigator.language||'en').slice(0,2).toLowerCase();
+  return I18N[n] ? n : 'en';
+}
+function applyLang(lang){
+  LANG = I18N[lang] ? lang : 'en';
+  const d = I18N[LANG];
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const v = d[el.getAttribute('data-i18n')];
+    if(v!=null) el.innerHTML = v;
   });
+  document.querySelectorAll('#langsel button').forEach(b=>b.classList.toggle('on', b.dataset.lang===LANG));
+  localStorage.setItem('lang', LANG);
+  runDeviceCheck(); // re-render el panel en el idioma nuevo
+}
+document.querySelectorAll('#langsel button').forEach(b=>b.addEventListener('click', ()=>applyLang(b.dataset.lang)));
 
-  // LIVE device check — corre el WebGPU REAL del visitante (sin descargar nada).
-  // Misma lógica honesta que el validador de la app: bloquea solo lo cierto
-  // (sin WebGPU / sin adapter / disco < 4 GB), avisa por shader-f16, y no inventa
-  // umbrales (subgroups = "acelera", no requisito).
-  (async function(){
-    const body = document.getElementById('landingDevBody');
-    if(!body) return;
-    const GB = n => (n/1073741824).toFixed(2)+' GB';
-    const row = (k,v,cls) => `<div class="r"><span>${k}</span><span${cls?' class="'+cls+'"':''}>${v}</span></div>`;
+// reveal on scroll
+const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+// copy buttons
+document.querySelectorAll('.codeblock .cp').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const code=btn.parentElement.querySelector('pre').innerText;
+    navigator.clipboard.writeText(code).then(()=>{const t=btn.textContent;btn.textContent='✓';setTimeout(()=>btn.textContent=t,1400);});
+  });
+});
+// poll demo animation
+const demo=document.getElementById('pollDemo');
+const dio=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){[...demo.querySelectorAll('.ln')].forEach((ln,i)=>{ln.style.animation=`pollin .5s ${i*0.55}s forwards`;});dio.unobserve(demo);}})},{threshold:.3});
+if(demo) dio.observe(demo);
 
-    if(!navigator.gpu){
-      body.style.opacity=1;
-      body.innerHTML = '<div class="bad" style="font-family:Geist,sans-serif"><strong>Sin WebGPU.</strong> Este navegador no puede correr el modelo. Probá desde Chrome o Edge de escritorio.</div>';
-      return;
-    }
-    let adapter=null;
-    try{ adapter = await navigator.gpu.requestAdapter({powerPreference:'high-performance'}); }catch(e){}
-    if(!adapter){
-      body.style.opacity=1;
-      body.innerHTML = '<div class="bad" style="font-family:Geist,sans-serif"><strong>WebGPU sin adapter.</strong> La GPU de este dispositivo no está disponible para el navegador.</div>';
-      return;
-    }
-    const i=adapter.info||{}, L=adapter.limits||{}, F=adapter.features;
-    const f16 = F && F.has('shader-f16');
-    const sb = L.maxStorageBufferBindingSize||0;
-    let quota=0; try{ quota=(await navigator.storage.estimate()).quota||0; }catch(e){}
-    const diskOK = quota >= 4*1073741824;
+// LIVE device check — corre el WebGPU real del visitante, en el idioma actual.
+async function runDeviceCheck(){
+  const body = document.getElementById('landingDevBody');
+  if(!body) return;
+  const d = I18N[LANG];
+  const GB = n => (n/1073741824).toFixed(2)+' GB';
+  const row = (k,v,cls) => `<div class="r"><span>${k}</span><span${cls?' class="'+cls+'"':''}>${v}</span></div>`;
+  const font='font-family:Geist,sans-serif';
 
-    let rows='';
-    rows += row('GPU', (i.vendor||'?')+' · '+(i.architecture||i.description||'?'));
-    rows += row('shader-f16', f16?'sí':'NO (los matmul lo usan)', f16?'ok':'bad');
-    rows += row('subgroups (acelera)', F&&F.has('subgroups')?'sí':'no');
-    rows += row('maxStorageBufferBindingSize', GB(sb)+(sb<=268435456?' (móvil)':''), sb<=268435456?'warn':'');
-    rows += row('Disco (necesita ≥4 GB)', GB(quota), diskOK?'ok':'bad');
+  if(!navigator.gpu){ body.style.opacity=1; body.innerHTML=`<div class="bad" style="${font}">${d.dev_nowebgpu}</div>`; return; }
+  let adapter=null; try{ adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance'}); }catch(e){}
+  if(!adapter){ body.style.opacity=1; body.innerHTML=`<div class="bad" style="${font}">${d.dev_noadapter}</div>`; return; }
 
-    let verdict;
-    if(!diskOK){
-      verdict = '<div class="verdict bad"><strong>No puede:</strong> el disco disponible ('+GB(quota)+') no entra el modelo de ~3.2 GB.</div>';
-    } else if(!f16){
-      verdict = '<div class="verdict warn">Cumple lo básico pero <strong>falta shader-f16</strong>, que los matmul usan — puede que no funcione. Se prueba corriendo.</div>';
-    } else {
-      verdict = '<div class="verdict"><strong>Cumple los requisitos chequeables.</strong> El modelo se adapta a tu GPU. Descarga: ~3.2 GB la primera vez.</div>';
-    }
-    body.style.opacity=1;
-    body.innerHTML = rows + verdict +
-      '<div class="note">Este modelo no declara un mínimo duro: pide lo que tu GPU tenga. Esto atrapa lo que con certeza no puede; el resto se prueba corriendo.</div>';
-  })();
+  const i=adapter.info||{}, L=adapter.limits||{}, F=adapter.features;
+  const f16 = F && F.has('shader-f16');
+  const sb = L.maxStorageBufferBindingSize||0;
+  let quota=0; try{ quota=(await navigator.storage.estimate()).quota||0; }catch(e){}
+  const diskOK = quota >= 4*1073741824;
 
-  // animate the polling demo when it scrolls into view (staggered)
-  const demo=document.getElementById('pollDemo');
-  const dio=new IntersectionObserver((es)=>{es.forEach(e=>{
-    if(e.isIntersecting){
-      [...demo.querySelectorAll('.ln')].forEach((ln,i)=>{ln.style.animationDelay=(i*0.55)+'s';ln.style.animationName='pollin';ln.style.animationDuration='.5s';ln.style.animationFillMode='forwards';});
-      dio.unobserve(demo);
-    }
-  })},{threshold:.3});
-  if(demo) dio.observe(demo);
+  let rows='';
+  rows += row('GPU', (i.vendor||'?')+' · '+(i.architecture||i.description||'?'));
+  rows += row('shader-f16', f16?'sí / yes':d.dev_f16no, f16?'ok':'bad');
+  rows += row(d.dev_sub, F&&F.has('subgroups')?'✓':'—');
+  rows += row('maxStorageBufferBindingSize', GB(sb)+(sb<=268435456?d.dev_mobile:''), sb<=268435456?'warn':'');
+  rows += row(d.dev_disk, GB(quota), diskOK?'ok':'bad');
+
+  let verdict;
+  if(!diskOK) verdict = `<div class="verdict bad">${d.dev_vbad.replace('{q}',GB(quota))}</div>`;
+  else if(!f16) verdict = `<div class="verdict warn">${d.dev_vwarn}</div>`;
+  else verdict = `<div class="verdict">${d.dev_vok}</div>`;
+  body.style.opacity=1;
+  body.innerHTML = rows + verdict + `<div class="note">${d.dev_note}</div>`;
+}
+
+applyLang(pickLang());
 </script>
 </body>
 </html>
