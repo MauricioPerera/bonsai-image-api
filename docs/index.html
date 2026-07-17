@@ -142,6 +142,7 @@
   .devpanel .r span:first-child{color:var(--dim)}
   .devpanel .ok{color:var(--green)} .devpanel .bad{color:var(--red)} .devpanel .warn{color:var(--amber)}
   .devpanel .verdict{color:var(--green);margin-top:.6rem;font-family:'Geist',sans-serif;font-size:.86rem}
+  .devpanel .verdict.bad{color:var(--red)} .devpanel .verdict.warn{color:var(--amber)}
   .devpanel .note{color:var(--faint);margin-top:.4rem;font-family:'Geist',sans-serif;font-size:.76rem}
 
   /* honest list */
@@ -386,18 +387,13 @@ curl $URL/api/image/<span class="tok-f">$id</span> -H <span class="tok-s">"Autho
       <p>Al abrir la página aparece un panel con lo que tu dispositivo tiene. Atrapa lo que <b>con certeza no</b> puede correr el modelo — sin WebGPU, sin placa disponible, poco disco — antes de gastar la descarga.</p>
     </div>
     <div style="display:grid;grid-template-columns:auto 1fr;gap:2rem;align-items:center" class="reveal">
-      <div class="devpanel">
-        <div class="h">Requisitos del dispositivo</div>
-        <div class="r"><span>GPU</span><span>intel · xe-lpg</span></div>
-        <div class="r"><span>shader-f16</span><span class="ok">sí</span></div>
-        <div class="r"><span>subgroups (acelera)</span><span>sí</span></div>
-        <div class="r"><span>maxStorageBufferBindingSize</span><span>2.00 GB</span></div>
-        <div class="r"><span>Disco (necesita ≥4 GB)</span><span class="ok">6.03 GB</span></div>
-        <div class="verdict"><b>Cumple los requisitos chequeables.</b> El modelo se adapta a tu GPU.</div>
-        <div class="note">Este modelo no declara un mínimo duro: pide lo que tu GPU tenga. Esto atrapa lo que con certeza no puede; el resto se prueba corriendo.</div>
+      <div class="devpanel" id="landingDev">
+        <div class="h">Requisitos de <em style="font-style:normal;color:var(--amber)">tu</em> dispositivo</div>
+        <div id="landingDevBody" style="opacity:.7">comprobando tu equipo…</div>
       </div>
       <div style="max-width:34ch">
-        <p class="muted">Es honesto a propósito: a diferencia de otros modelos, este se <b>adapta</b> a la placa que tengas, así que el chequeo no promete un “va a andar” garantizado — pero sí te frena antes de bajar de gusto si es imposible. Los teléfonos, por ejemplo, quedan afuera y te lo dice al toque.</p>
+        <p class="muted">Este panel <b>chequea tu equipo de verdad</b>, ahora — con el WebGPU de este navegador, sin descargar nada. Así sabés si te va a correr <b>antes</b> de desplegar.</p>
+        <p class="muted" style="font-size:.9rem">Es honesto a propósito: este modelo se <b>adapta</b> a la placa que tengas, así que no promete un “va a andar” garantizado — pero sí te frena si es imposible. Los teléfonos, por ejemplo, quedan afuera y te lo dice al toque.</p>
       </div>
     </div>
   </div>
@@ -442,6 +438,54 @@ curl $URL/api/image/<span class="tok-f">$id</span> -H <span class="tok-s">"Autho
       navigator.clipboard.writeText(code).then(()=>{const t=btn.textContent;btn.textContent='copiado ✓';setTimeout(()=>btn.textContent=t,1400);});
     });
   });
+
+  // LIVE device check — corre el WebGPU REAL del visitante (sin descargar nada).
+  // Misma lógica honesta que el validador de la app: bloquea solo lo cierto
+  // (sin WebGPU / sin adapter / disco < 4 GB), avisa por shader-f16, y no inventa
+  // umbrales (subgroups = "acelera", no requisito).
+  (async function(){
+    const body = document.getElementById('landingDevBody');
+    if(!body) return;
+    const GB = n => (n/1073741824).toFixed(2)+' GB';
+    const row = (k,v,cls) => `<div class="r"><span>${k}</span><span${cls?' class="'+cls+'"':''}>${v}</span></div>`;
+
+    if(!navigator.gpu){
+      body.style.opacity=1;
+      body.innerHTML = '<div class="bad" style="font-family:Geist,sans-serif"><strong>Sin WebGPU.</strong> Este navegador no puede correr el modelo. Probá desde Chrome o Edge de escritorio.</div>';
+      return;
+    }
+    let adapter=null;
+    try{ adapter = await navigator.gpu.requestAdapter({powerPreference:'high-performance'}); }catch(e){}
+    if(!adapter){
+      body.style.opacity=1;
+      body.innerHTML = '<div class="bad" style="font-family:Geist,sans-serif"><strong>WebGPU sin adapter.</strong> La GPU de este dispositivo no está disponible para el navegador.</div>';
+      return;
+    }
+    const i=adapter.info||{}, L=adapter.limits||{}, F=adapter.features;
+    const f16 = F && F.has('shader-f16');
+    const sb = L.maxStorageBufferBindingSize||0;
+    let quota=0; try{ quota=(await navigator.storage.estimate()).quota||0; }catch(e){}
+    const diskOK = quota >= 4*1073741824;
+
+    let rows='';
+    rows += row('GPU', (i.vendor||'?')+' · '+(i.architecture||i.description||'?'));
+    rows += row('shader-f16', f16?'sí':'NO (los matmul lo usan)', f16?'ok':'bad');
+    rows += row('subgroups (acelera)', F&&F.has('subgroups')?'sí':'no');
+    rows += row('maxStorageBufferBindingSize', GB(sb)+(sb<=268435456?' (móvil)':''), sb<=268435456?'warn':'');
+    rows += row('Disco (necesita ≥4 GB)', GB(quota), diskOK?'ok':'bad');
+
+    let verdict;
+    if(!diskOK){
+      verdict = '<div class="verdict bad"><strong>No puede:</strong> el disco disponible ('+GB(quota)+') no entra el modelo de ~3.2 GB.</div>';
+    } else if(!f16){
+      verdict = '<div class="verdict warn">Cumple lo básico pero <strong>falta shader-f16</strong>, que los matmul usan — puede que no funcione. Se prueba corriendo.</div>';
+    } else {
+      verdict = '<div class="verdict"><strong>Cumple los requisitos chequeables.</strong> El modelo se adapta a tu GPU. Descarga: ~3.2 GB la primera vez.</div>';
+    }
+    body.style.opacity=1;
+    body.innerHTML = rows + verdict +
+      '<div class="note">Este modelo no declara un mínimo duro: pide lo que tu GPU tenga. Esto atrapa lo que con certeza no puede; el resto se prueba corriendo.</div>';
+  })();
 
   // animate the polling demo when it scrolls into view (staggered)
   const demo=document.getElementById('pollDemo');
