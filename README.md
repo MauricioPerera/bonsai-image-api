@@ -86,6 +86,13 @@ fails closed. One image at a time (one GPU) — the rest get `429`.
 
 ## Good to know
 
+- **A device check runs before download.** On page load a panel reports your
+  GPU features, buffer limits and disk quota, and catches what definitely
+  cannot run (no WebGPU, no adapter, < 4 GB free) *before* the 3.2 GB download.
+  It does not promise a green "will work": this runtime requests whatever your
+  device has and adapts its kernels, so unlike a model with a hard declared
+  requirement, the only certainty is the negative — the rest is proven by
+  running.
 - **The tab is the worker.** Close it and the API answers `503`. It must be armed
   by hand once per session — a browser tab can't be reached from outside, so it
   reaches out (long-polls) and generation runs on its GPU.

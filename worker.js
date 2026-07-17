@@ -44,6 +44,72 @@
   }
   const wstatus = (s) => { const el = $('__apiStatus'); if (el) el.textContent = s; };
 
+  // ── validador de requisitos (corre al cargar, ANTES de bajar 3.2 GB) ───────
+  // Honestidad: este runtime pide las features/limits que el dispositivo TENGA y
+  // adapta los kernels — no declara un mínimo duro (a diferencia del Bonsai LLM,
+  // cuyo kernel SSM exigía `subgroups`). Así que esto NO promete "va a andar":
+  // atrapa lo que con certeza NO puede (sin WebGPU, sin adapter, disco corto) y
+  // reporta el resto con contexto, sin inventar umbrales.
+  async function deviceCheck() {
+    const wrap = document.createElement('div');
+    wrap.style.cssText =
+      'position:fixed;left:12px;top:12px;z-index:99999;background:#0b0d10f2;color:#e6e6e6;' +
+      'border:1px solid #2a3038;border-radius:8px;padding:.7rem .8rem;font:12px system-ui;max-width:320px;backdrop-filter:blur(4px)';
+    wrap.innerHTML = '<div style="font-weight:600;margin-bottom:.35rem">Requisitos del dispositivo</div><div id="__devBody">comprobando…</div>';
+    document.body.appendChild(wrap);
+    const body = wrap.querySelector('#__devBody');
+
+    const GB = (n) => (n / 1073741824).toFixed(2) + ' GB';
+    const rows = [];
+    const blockers = [];
+    const row = (k, v, bad) => rows.push(`<div style="display:flex;justify-content:space-between;gap:1rem"><span style="opacity:.65">${k}</span><span${bad ? ' style="color:#ff6b6b"' : ''}>${v}</span></div>`);
+
+    if (!navigator.gpu) {
+      body.innerHTML = '<div style="color:#ff6b6b"><strong>Sin WebGPU.</strong> Este navegador no puede ejecutar el modelo. Usá Chrome o Edge de escritorio recientes.</div>';
+      return;
+    }
+    let adapter = null;
+    try { adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' }); } catch {}
+    if (!adapter) {
+      body.innerHTML = '<div style="color:#ff6b6b"><strong>WebGPU sin adapter.</strong> La GPU de este dispositivo no está disponible para el navegador.</div>';
+      return;
+    }
+    const i = adapter.info || {}, L = adapter.limits || {}, F = adapter.features;
+    row('GPU', (i.vendor || '?') + ' · ' + (i.architecture || i.description || '?'));
+
+    // shader-f16: todos los kernels de matmul lo piden. Sin él, muy probablemente
+    // no funcione — pero lo marco como aviso, no como bloqueo, porque el runtime
+    // podría tener algún camino que no vi.
+    const f16 = F && F.has('shader-f16');
+    row('shader-f16', f16 ? 'sí' : 'NO (los matmul lo usan)', !f16);
+    row('subgroups (acelera)', F && F.has('subgroups') ? 'sí' : 'no');
+    row('subgroup-matrix (acelera)', F && F.has('chromium-experimental-subgroup-matrix') ? 'sí' : 'no');
+
+    const sb = L.maxStorageBufferBindingSize || 0;
+    // No invento un mínimo. Reporto el número; solo señalo el rango típico de
+    // móviles (~128-256 MB), muy por debajo de un desktop (2 GB), como aviso.
+    row('maxStorageBufferBindingSize', GB(sb) + (sb <= 268435456 ? ' (típico de móvil)' : ''), sb <= 268435456);
+    row('maxBufferSize', GB(L.maxBufferSize || 0));
+
+    let quota = 0;
+    try { quota = (await navigator.storage.estimate()).quota || 0; } catch {}
+    // Disco: bloqueo REAL y chequeable. El modelo cacheado son ~3.2 GB.
+    const diskOK = quota >= 4 * 1073741824;
+    if (!diskOK) blockers.push(`el disco disponible (${GB(quota)}) no entra el modelo de ~3.2 GB`);
+    row('Disco (necesita ≥4 GB)', GB(quota), !diskOK);
+
+    let verdict;
+    if (blockers.length) {
+      verdict = '<div style="color:#ff6b6b;margin-top:.5rem"><strong>No puede correr el modelo:</strong><ul style="margin:.2rem 0 0;padding-left:1.1rem">' + blockers.map((b) => '<li>' + b + '</li>').join('') + '</ul></div>';
+    } else if (!f16) {
+      verdict = '<div style="color:#e8a55e;margin-top:.5rem">Cumple lo básico pero <strong>falta shader-f16</strong>, que los matmul usan — puede que no funcione. Probá igual.</div>';
+    } else {
+      verdict = '<div style="color:#53e6a6;margin-top:.5rem"><strong>Cumple los requisitos chequeables.</strong> El modelo se adapta a tu GPU. Descarga: ~3.2 GB la primera vez.</div>';
+    }
+    body.innerHTML = rows.join('') + verdict +
+      '<div style="opacity:.5;margin-top:.4rem;font-size:11px">Este modelo no declara un mínimo duro: pide lo que tu GPU tenga. Esto atrapa lo que con certeza no puede; el resto se prueba corriendo.</div>';
+  }
+
   // ── señales del estado de la app ──────────────────────────────────────────
   const vis = (el) => !!(el && el.offsetParent);
   function loadPhase() {
@@ -215,6 +281,7 @@
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { panel(); loop(); });
-  else { panel(); loop(); }
+  function init() { panel(); deviceCheck(); loop(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
